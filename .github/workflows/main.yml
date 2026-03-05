@@ -19,7 +19,12 @@ jobs:
 
       - name: Setup Nuget.exe
         uses: nuget/setup-nuget@v1
-  
+
+      - name: Install .NET Framework targeting packs
+        shell: pwsh
+        run: |
+          choco install netfx-4.0-devpack netfx-4.5-devpack -y --no-progress
+
       - name: Nuget Restore
         run: nuget restore $Env:GITHUB_WORKSPACE\SharpHound3\SharpHound3.sln && nuget restore $Env:GITHUB_WORKSPACE\Certify\Certify.sln && nuget restore $Env:GITHUB_WORKSPACE\Rubeus\Rubeus.sln && nuget restore $Env:GITHUB_WORKSPACE\SafetyKatz\SafetyKatz.sln && nuget restore $Env:GITHUB_WORKSPACE\Seatbelt\Seatbelt.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpDPAPI\SharpDPAPI.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpMove\SharpMove\SharpMove.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpRDP\SharpRDP\SharpRDP.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpStay\SharpStay\SharpStay.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpUp\SharpUp.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpWMI\SharpWMI.sln && nuget restore $Env:GITHUB_WORKSPACE\ADSearch\ADSearch.sln && nuget restore $Env:GITHUB_WORKSPACE\PortBender\src\PortBender\PortBender.sln && nuget restore $Env:GITHUB_WORKSPACE\Whisker\Whisker.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpSystemTriggers\SharpSystemTriggers.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpGPOAbuse\SharpGPOAbuse.sln
 
@@ -46,7 +51,7 @@ jobs:
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpUp\SharpUp\SharpUp.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpWMI\SharpWMI\SharpWMI.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\ADSearch\ADSearch\ADSearch.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\PortBender\PortBender\src\PortBender\PortBender\PortBender.csproj /property:Configuration=Release
+          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\PortBender\src\PortBender\PortBender\PortBender.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\Whisker\Whisker\Whisker.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\Midl2Bytes\Midl2Bytes.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\SharpEfsTrigger\SharpEfsTrigger.csproj /property:Configuration=Release
@@ -117,7 +122,7 @@ jobs:
       - uses: actions/upload-artifact@master
         with:
           name: PortBender
-          path: PortBender\PortBender\src\PortBender\bin\Release\PortBender.exe
+          path: PortBender\src\PortBender\PortBender\bin\Release\PortBender.exe
 
       - uses: actions/upload-artifact@master
         with:
