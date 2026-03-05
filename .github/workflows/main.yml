@@ -1,13 +1,13 @@
-name: Build
+name: Build PortBender
 
 on: [push]
+
 jobs:
-  build:
+  portbender:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      
-      - uses: actions/checkout@v2
+
       - name: Checkout submodules
         shell: bash
         run: |
@@ -19,9 +19,6 @@ jobs:
 
       - name: Setup Nuget.exe
         uses: nuget/setup-nuget@v1
-
-      - name: Nuget Restore
-        run: nuget restore $Env:GITHUB_WORKSPACE\SharpHound3\SharpHound3.sln && nuget restore $Env:GITHUB_WORKSPACE\Certify\Certify.sln && nuget restore $Env:GITHUB_WORKSPACE\Rubeus\Rubeus.sln && nuget restore $Env:GITHUB_WORKSPACE\SafetyKatz\SafetyKatz.sln && nuget restore $Env:GITHUB_WORKSPACE\Seatbelt\Seatbelt.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpDPAPI\SharpDPAPI.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpMove\SharpMove\SharpMove.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpRDP\SharpRDP\SharpRDP.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpStay\SharpStay\SharpStay.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpUp\SharpUp.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpWMI\SharpWMI.sln && nuget restore $Env:GITHUB_WORKSPACE\ADSearch\ADSearch.sln && nuget restore $Env:GITHUB_WORKSPACE\PortBender\src\PortBender\PortBender.sln && nuget restore $Env:GITHUB_WORKSPACE\Whisker\Whisker.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpSystemTriggers\SharpSystemTriggers.sln && nuget restore $Env:GITHUB_WORKSPACE\SharpGPOAbuse\SharpGPOAbuse.sln
 
       - name: Install .NET Framework reference assemblies (net40/net45)
         shell: pwsh
@@ -54,131 +51,37 @@ jobs:
       - name: Locate PortBender
         shell: pwsh
         run: |
-          $pb = Get-ChildItem -Recurse -Filter PortBender.csproj | Select-Object -First 1
-          if (!$pb) { throw "PortBender.csproj not found" }
-          "PORTBENDER_CSPROJ=$($pb.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          
-      - name: Build Tools
+          $pbProj = Get-ChildItem -Recurse -Filter PortBender.csproj -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($pbProj) {
+            "PORTBENDER_PATH=$($pbProj.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } else {
+            $pbSln = Get-ChildItem -Recurse -Filter PortBender.sln -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($pbSln) {
+              "PORTBENDER_PATH=$($pbSln.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            } else {
+              throw "PortBender project not found"
+            }
+          }
+
+      - name: Nuget Restore (PortBender)
         shell: pwsh
         run: |
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\Certify\Certify\Certify.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\Rubeus\Rubeus\Rubeus.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SafetyKatz\SafetyKatz\SafetyKatz.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\Seatbelt\Seatbelt\Seatbelt.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpDPAPI\SharpDPAPI\SharpDPAPI.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpMove\SharpMove\SharpMove\SharpMove.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpRDP\SharpRDP\SharpRDP\SharpRDP.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpStay\SharpStay\SharpStay\SharpStay.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpUp\SharpUp\SharpUp.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpWMI\SharpWMI\SharpWMI.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\ADSearch\ADSearch\ADSearch.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" "$env:PORTBENDER_CSPROJ" /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\Whisker\Whisker\Whisker.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\Midl2Bytes\Midl2Bytes.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\SharpEfsTrigger\SharpEfsTrigger.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\SharpDcomTrigger\SharpDcomTrigger.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\SharpSpoolTrigger\SharpSpoolTrigger.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpGPOAbuse\SharpGPOAbuse\SharpGPOAbuse.csproj /property:Configuration=Release
+          nuget restore "$env:PORTBENDER_PATH"
+
+      - name: Build PortBender
+        shell: pwsh
+        run: |
+          & "$env:MSBUILD_EXE" "$env:PORTBENDER_PATH" /property:Configuration=Release
 
       - name: Collect PortBender
         shell: pwsh
         run: |
-          $exe = Get-ChildItem -Recurse -Filter PortBender.exe | Where-Object { $_.FullName -match '\\bin\\Release\\' } | Select-Object -First 1
+          $exe = Get-ChildItem -Recurse -Filter PortBender.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\bin\\Release\\' } | Select-Object -First 1
           if (!$exe) { throw "PortBender.exe not found" }
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
           Copy-Item $exe.FullName artifacts\PortBender.exe
-      
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpHound3
-          path: SharpHound3\SharpHound3\bin\Release\SharpHound.exe
 
-      - uses: actions/upload-artifact@master
-        with:
-          name: Certify
-          path: Certify\Certify\bin\Release\Certify.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: Rubeus
-          path: Rubeus\Rubeus\bin\Release\Rubeus.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: SafetyKatz
-          path: SafetyKatz\SafetyKatz\bin\Release\SafetyKatz.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: Seatbelt
-          path: Seatbelt\Seatbelt\bin\Release\Seatbelt.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpDPAPI
-          path: SharpDPAPI\SharpDPAPI\bin\Release\SharpDPAPI.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpMove
-          path: SharpMove\SharpMove\SharpMove\bin\Release\SharpMove.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpRDP
-          path: SharpRDP\SharpRDP\SharpRDP\bin\Release\SharpRDP.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpStay
-          path: SharpStay\SharpStay\SharpStay\bin\Release\SharpStay.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpUp
-          path: SharpUp\SharpUp\bin\Release\SharpUp.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpWMI
-          path: SharpWMI\SharpWMI\bin\Release\SharpWMI.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: ADSearch
-          path: ADSearch\ADSearch\bin\Release\ADSearch.exe
-      
       - uses: actions/upload-artifact@master
         with:
           name: PortBender
           path: artifacts\PortBender.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: Whisker
-          path: Whisker\Whisker\bin\Release\Whisker.exe
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: Midl2Bytes
-          path: SharpSystemTriggers\Midl2Bytes\bin\Release\Midl2Bytes.exe
-      
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpDcomTrigger
-          path: SharpSystemTriggers\SharpDcomTrigger\bin\Release\SharpDcomTrigger.exe
-      
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpEfsTrigger
-          path: SharpSystemTriggers\SharpEfsTrigger\bin\Release\SharpEfsTrigger.exe
-      
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpSpoolTrigger
-          path: SharpSystemTriggers\SharpSpoolTrigger\bin\Release\SharpSpoolTrigger.exe
-      
-      - uses: actions/upload-artifact@master
-        with:
-          name: SharpGPOAbuse
-          path: SharpGPOAbuse\SharpGPOAbuse\bin\Release\SharpGPOAbuse.exe
