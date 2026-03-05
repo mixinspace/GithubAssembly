@@ -50,6 +50,13 @@ jobs:
           $msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\Current\Bin\MSBuild.exe | Select-Object -First 1
           if (!$msbuild) { throw "MSBuild.exe not found" }
           "MSBUILD_EXE=$msbuild" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Locate PortBender
+        shell: pwsh
+        run: |
+          $pb = Get-ChildItem -Recurse -Filter PortBender.csproj | Select-Object -First 1
+          if (!$pb) { throw "PortBender.csproj not found" }
+          "PORTBENDER_CSPROJ=$($pb.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           
       - name: Build Tools
         shell: pwsh
@@ -65,13 +72,21 @@ jobs:
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpUp\SharpUp\SharpUp.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpWMI\SharpWMI\SharpWMI.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\ADSearch\ADSearch\ADSearch.csproj /property:Configuration=Release
-          & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\PortBender\src\PortBender\PortBender\PortBender.csproj /property:Configuration=Release
+          & "$env:MSBUILD_EXE" "$env:PORTBENDER_CSPROJ" /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\Whisker\Whisker\Whisker.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\Midl2Bytes\Midl2Bytes.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\SharpEfsTrigger\SharpEfsTrigger.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\SharpDcomTrigger\SharpDcomTrigger.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpSystemTriggers\SharpSpoolTrigger\SharpSpoolTrigger.csproj /property:Configuration=Release
           & "$env:MSBUILD_EXE" $Env:GITHUB_WORKSPACE\SharpGPOAbuse\SharpGPOAbuse\SharpGPOAbuse.csproj /property:Configuration=Release
+
+      - name: Collect PortBender
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Recurse -Filter PortBender.exe | Where-Object { $_.FullName -match '\\bin\\Release\\' } | Select-Object -First 1
+          if (!$exe) { throw "PortBender.exe not found" }
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Copy-Item $exe.FullName artifacts\PortBender.exe
       
       - uses: actions/upload-artifact@master
         with:
@@ -136,7 +151,7 @@ jobs:
       - uses: actions/upload-artifact@master
         with:
           name: PortBender
-          path: PortBender\src\PortBender\PortBender\bin\Release\PortBender.exe
+          path: artifacts\PortBender.exe
 
       - uses: actions/upload-artifact@master
         with:
